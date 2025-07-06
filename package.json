@@ -1,0 +1,64 @@
+{
+  "name": "awsforge",
+  "version": "1.0.0",
+  "description": "Enterprise-grade AWS Cognito authentication toolkit for seamless user management, registration, login, and password recovery with JWT token handling",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx dev-test.ts",
+    "dev:single": "tsx -e \"import('./dev-test.ts').then(m => m.testIndividualMethod())\"",
+    "test": "tsx test/cognito.test.ts",
+    "test:login": "tsx -e \"console.log('Quick login test...'); import('./src/services/cognito.js').then(async m => { const service = new m.CognitoService(); await service.loginUser({username: process.env.TEST_USERNAME, password: process.env.TEST_PASSWORD}); })\"",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "aws",
+    "cognito",
+    "authentication",
+    "jwt",
+    "user-management",
+    "login",
+    "signup",
+    "password-recovery",
+    "typescript"
+  ],
+  "author": "Avadhut Noola <avdhutnula@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/avadhutnoola/awsforge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/avadhutnoola/awsforge/issues"
+  },
+  "homepage": "https://github.com/avadhutnoola/awsforge#readme",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.450.0",
+    "aws-sdk": "^2.1490.0",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.8",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.9.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.1",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "dotenv": "^17.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

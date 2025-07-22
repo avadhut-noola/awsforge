@@ -1,5 +1,5 @@
 {
-  "name": "awsforge",
+  "name": "@ssktechnologies/awsforge",
   "version": "1.0.0",
   "description": "Enterprise-grade AWS Cognito authentication toolkit for seamless user management, registration, login, and password recovery with JWT token handling",
   "main": "dist/index.js",
@@ -28,14 +28,17 @@
   ],
   "author": "Avadhut Noola <avdhutnula@gmail.com>",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/avadhutnoola/awsforge.git"
+    "url": "https://github.com/avadhut-noola/awsforge.git"
   },
   "bugs": {
-    "url": "https://github.com/avadhutnoola/awsforge/issues"
+    "url": "https://github.com/avadhut-noola/awsforge/issues"
   },
-  "homepage": "https://github.com/avadhutnoola/awsforge#readme",
+  "homepage": "https://github.com/avadhut-noola/awsforge#readme",
   "files": [
     "dist/**/*",
     "README.md",

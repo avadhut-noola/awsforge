@@ -14,5 +14,6 @@ export function extractTokens(response: InitiateAuthCommandOutput): AuthTokens {
     accessToken: auth.AccessToken!,
     idToken: auth.IdToken!,
     refreshToken: auth.RefreshToken!,
+    expiresIn: auth.ExpiresIn!
   };
 }

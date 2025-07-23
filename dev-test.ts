@@ -3,17 +3,13 @@ import { CognitoService } from './src/services/cognito.js';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import { pathToFileURL } from 'url';
+
 dotenv.config();
 
 console.log("Current working directory:", process.cwd());
-console.log("Does .env exist?", fs.existsSync('.env'));
-console.log("Raw .env contents:\n", fs.readFileSync('.env', 'utf8'));
+console.log("Environment check - .env exists:", fs.existsSync('.env'));
 
 // Load environment variables
-console.log("Environment variables loaded successfully");
-console.log("COGNITO_CLIENT_ID:", process.env.COGNITO_CLIENT_ID);
-
-// Test configuration - Let PackageConfig handle the environment variables
 const testConfig = {
   clientId: process.env.COGNITO_CLIENT_ID!,
   clientSecret: process.env.COGNITO_CLIENT_SECRET!,
@@ -21,101 +17,56 @@ const testConfig = {
   region: process.env.AWS_REGION || 'us-east-1',
 };
 
-// Debug the configuration object
-console.log("=== DEBUG CONFIG ===");
-console.log("testConfig:", testConfig);
-console.log("clientId exists:", !!testConfig.clientId);
-console.log("clientId length:", testConfig.clientId?.length);
-console.log("clientId value:", testConfig.clientId);
-console.log("===================");
-
-// ADD DEBUGGING AFTER THE CONFIG OUTPUT
-console.log("\n🔍 DEBUG: About to continue with test execution...");
-console.log("🔍 DEBUG: Process still running, checking next steps...");
+console.log("Config loaded:", {
+  clientId: !!testConfig.clientId,
+  clientSecret: !!testConfig.clientSecret,
+  userPoolId: !!testConfig.userPoolId,
+  region: testConfig.region
+});
 
 // Test credentials
 const testUser = {
-  username: "nodetest7",
+  username: "nodetest721234567",
   password: "TempPassword123!",
-  email: "avdhutnula@gmail.com",
+  email: "avdhutnula2345678@gmail.com",
   firstName: "Test",
   lastName: "User",
   phoneNumber: "+1234567890",
-  customAttributes: {
-   // You can use your own attributes only if they are configured before using in AWS Cognito
-  }
+  customAttributes: {}
 };
 
-
-console.log("🔍 DEBUG: Test user credentials defined");
-
-// Existing user for login test
 const existingUser = {
   username: "avadhutn@ssktech.co.in",
   password: "Welcome@123"
 };
 
-console.log("🔍 DEBUG: Existing user credentials defined");
-
-// Add process error handlers
-process.on('uncaughtException', (error) => {
-  console.error('💥 UNCAUGHT EXCEPTION:', error);
-  console.error('Stack:', error.stack);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('💥 UNHANDLED REJECTION at:', promise);
-  console.error('Reason:', reason);
-  process.exit(1);
-});
+// Global variables to store tokens for testing
+let accessToken: string;
+let idToken: string;
+let refreshToken: string;
 
 async function runTests() {
-
-  console.log("🔍 DEBUG: Entering runTests function");
-  
-  console.log("🚀 Starting CognitoService Tests...\n");
-  
-  // Test 1: Configuration Test
-  console.log("🔍 DEBUG: About to start Test 1 - Configuration");
-  console.log("📋 Test 1: Configuration Test");
+  console.log("Starting CognitoService Tests...\n");
   
   let cognitoService: CognitoService;
   
+  // Test 1: Service Initialization
+  console.log("Test 1: Service Initialization");
   try {
-    console.log("🔍 DEBUG: About to create CognitoService instance");
-    console.log("Creating CognitoService with config:", testConfig);
-    
-    // This is likely where the error occurs
-      cognitoService = new CognitoService({
-        ...testConfig,
-        allowedCustomAttributes: [] // <-- Add your own attributes
-     });
-    
-    console.log("🔍 DEBUG: CognitoService instance created successfully");
-    console.log("✅ CognitoService initialized successfully");
-    console.log("Config:", {
-      clientId: testConfig.clientId ? "✅ Set" : "❌ Missing",
-      clientSecret: testConfig.clientSecret ? "✅ Set" : "❌ Missing",
-      userPoolId: testConfig.userPoolId ? "✅ Set" : "❌ Missing",
-      region: testConfig.region
+    cognitoService = new CognitoService({
+      ...testConfig,
+      allowedCustomAttributes: []
     });
+    console.log("✓ CognitoService initialized successfully");
   } catch (error) {
-    console.error("🔍 DEBUG: Error caught in configuration test");
-    console.error("❌ Configuration failed:", error);
-    console.error("Full error details:", error);
-    console.error("Error stack:", (error as Error).stack);
-    return; // Exit if configuration fails
+    console.error("✗ Service initialization failed:", error);
+    return;
   }
-  
-  console.log("🔍 DEBUG: Configuration test completed, continuing...");
-  console.log("\n" + "=".repeat(50) + "\n");
+  console.log("-".repeat(50));
 
-  // Test 2: User Registration
-  console.log("🔍 DEBUG: About to start Test 2 - User Registration");
-  console.log("📝 Test 2: User Registration");
+  // Test 2: User Registration (Skip if user exists)
+  console.log("Test 2: User Registration");
   try {
-    console.log("🔍 DEBUG: Calling registerUser method");
     const registerResult = await cognitoService.registerUser({
       username: testUser.username,
       password: testUser.password,
@@ -125,180 +76,155 @@ async function runTests() {
       phoneNumber: testUser.phoneNumber,
       customAttributes: testUser.customAttributes
     });
-    console.log("🔍 DEBUG: registerUser method completed");
-    console.log("✅ User registration successful");
-    console.log("Response:", {
-      UserSub: registerResult.UserSub,
-      CodeDeliveryDetails: registerResult.CodeDeliveryDetails
-    });
+    console.log("✓ User registration successful");
+    console.log("UserSub:", registerResult.UserSub);
   } catch (error: any) {
-    console.log("🔍 DEBUG: Error in registration test");
-    console.log("ℹ️ Registration result:", error.message);
-    // This might fail if user already exists - that's okay
+    console.log("- Registration skipped:", error.message);
   }
-  console.log("🔍 DEBUG: Registration test completed");
-  console.log("\n" + "=".repeat(50) + "\n");
+  console.log("-".repeat(50));
 
-  // Test 3: Confirm Registration (Manual step required)
-  console.log("🔍 DEBUG: About to start Test 3 - Confirm Registration");
-  console.log("📧 Test 3: Confirm Registration");
-  console.log("⚠️ Manual step required:");
-  console.log("1. Check email for confirmation code");
-  console.log("2. Update the confirmationCode below");
-  console.log("3. Uncomment the confirmation test\n");
-
-  // === UNCOMMENT AND UPDATE BELOW ===
-  // const confirmationCode = ""; // <-- Paste the code from your email here
-  // try {
-  //   const confirmResult = await cognitoService.confirmUserRegistration({
-  //     username: testUser.username,
-  //     confirmationCode
-  //   });
-  //   console.log("✅ User confirmed successfully");
-  //   console.log("Response:", confirmResult);
-  // } catch (error: any) {
-  //   console.log("❌ Confirmation failed:", error.message);
-  // }
-
-  console.log("🔄 Skipping confirmation test (requires manual code input)");
-  console.log("🔍 DEBUG: Confirmation test completed (skipped)");
-  console.log("\n" + "=".repeat(50) + "\n");
-
-  // Test 4: Login with Existing User
-  console.log("🔍 DEBUG: About to start Test 4 - User Login");
-  console.log("🔐 Test 4: User Login (Existing User)");
+  // Test 3: User Login (Store tokens for other tests)
+  console.log("Test 3: User Login");
   try {
-    console.log("🔍 DEBUG: Calling loginUser method");
     const loginResult = await cognitoService.loginUser({
       username: existingUser.username,
       password: existingUser.password
     });
-    console.log("🔍 DEBUG: loginUser method completed");
-    console.log("✅ Login successful");
-    console.log("Response:", {
-      AccessToken: loginResult.AuthenticationResult?.AccessToken ? "✅ Present" : "❌ Missing",
-      IdToken: loginResult.AuthenticationResult?.IdToken ? "✅ Present" : "❌ Missing",
-      RefreshToken: loginResult.AuthenticationResult?.RefreshToken ? "✅ Present" : "❌ Missing",
-      ExpiresIn: loginResult.AuthenticationResult?.ExpiresIn,
-      TokenType: loginResult.AuthenticationResult?.TokenType
-    });
+    
+    if (loginResult.AuthenticationResult) {
+      accessToken = loginResult.AuthenticationResult.AccessToken!;
+      idToken = loginResult.AuthenticationResult.IdToken!;
+      refreshToken = loginResult.AuthenticationResult.RefreshToken!;
+      
+      console.log("✓ Login successful");
+      console.log("Tokens received:", {
+        AccessToken: !!accessToken,
+        IdToken: !!idToken,
+        RefreshToken: !!refreshToken
+      });
+    }
   } catch (error: any) {
-    console.error("🔍 DEBUG: Error in login test");
-    console.error("❌ Login failed:", error.message);
-    console.error("Error details:", error);
+    console.error("✗ Login failed:", error.message);
+    return; // Exit if login fails as other tests depend on tokens
   }
-  console.log("🔍 DEBUG: Login test completed");
-  console.log("\n" + "=".repeat(50) + "\n");
+  console.log("-".repeat(50));
 
-  // Test 5: Forgot Password
-  console.log("🔍 DEBUG: About to start Test 5 - Forgot Password");
-  console.log("🔒 Test 5: Forgot Password");
+  // Test 4: Token Verification (New feature)
+  console.log("Test 4: Token Verification");
   try {
-    console.log("🔍 DEBUG: Calling initiateForgotPassword method");
+    const accessTokenResult = await cognitoService.verifyAccessToken(accessToken);
+    const idTokenResult = await cognitoService.verifyIdToken(idToken);
+    
+    console.log("✓ Access token verification:", accessTokenResult.isValid ? "Valid" : "Invalid");
+    console.log("✓ ID token verification:", idTokenResult.isValid ? "Valid" : "Invalid");
+    
+    if (accessTokenResult.decoded) {
+      console.log("Token expires at:", new Date(accessTokenResult.decoded.exp * 1000).toISOString());
+      console.log("Token SUB:", accessTokenResult.decoded.sub);
+    }
+  } catch (error: any) {
+    console.error("✗ Token verification failed:", error.message);
+  }
+  console.log("-".repeat(50));
+
+  // Test 5: Get User Profile (New feature)
+  console.log("Test 5: Get User Profile");
+  try {
+    const userProfile = await cognitoService.getUserFromToken(accessToken);
+    console.log("✓ User profile retrieved");
+    console.log("Username:", userProfile.username);
+    console.log("SUB:", userProfile.attributes.sub);
+    console.log("Attributes count:", Object.keys(userProfile.attributes).length);
+  } catch (error: any) {
+    console.error("✗ Get user profile failed:", error.message);
+  }
+  console.log("-".repeat(50));
+
+  // Test 6: Refresh Tokens (Updated with access token)
+  console.log("Test 6: Refresh Tokens");
+  try {
+    // Method 1: Using access token to get SUB (recommended)
+    const refreshResult = await cognitoService.refreshTokens(refreshToken, undefined, accessToken);
+    if (refreshResult.AuthenticationResult) {
+      console.log("✓ Tokens refreshed successfully using access token");
+      console.log("New tokens received:", {
+        AccessToken: !!refreshResult.AuthenticationResult.AccessToken,
+        IdToken: !!refreshResult.AuthenticationResult.IdToken
+      });
+    }
+  } catch (error: any) {
+    console.error("✗ Token refresh with access token failed:", error.message);
+    
+    // Method 2: Fallback to username method
+    try {
+      console.log("Trying refresh with username fallback...");
+      const refreshResult2 = await cognitoService.refreshTokensWithUsername(refreshToken, existingUser.username);
+      if (refreshResult2.AuthenticationResult) {
+        console.log("✓ Tokens refreshed successfully using username fallback");
+      }
+    } catch (error2: any) {
+      console.error("✗ Token refresh with username also failed:", error2.message);
+    }
+  }
+  console.log("-".repeat(50));
+
+  // Test 7: Forgot Password Flow
+  console.log("Test 7: Forgot Password");
+  try {
     const forgotResult = await cognitoService.initiateForgotPassword({
       username: existingUser.username
     });
-    console.log("🔍 DEBUG: initiateForgotPassword method completed");
-    console.log("✅ Forgot password initiated successfully");
-    console.log("Response:", {
-      CodeDeliveryDetails: forgotResult.CodeDeliveryDetails
-    });
+    console.log("✓ Forgot password initiated");
+    console.log("Code delivery:", forgotResult.CodeDeliveryDetails?.DeliveryMedium);
   } catch (error: any) {
-    console.log("🔍 DEBUG: Error in forgot password test");
-    console.log("ℹ️ Forgot password result:", error.message);
+    console.log("- Forgot password:", error.message);
   }
-  console.log("🔍 DEBUG: Forgot password test completed");
-  console.log("\n" + "=".repeat(50) + "\n");
+  console.log("-".repeat(50));
 
-  // Test 6: Error Handling
-  console.log("🔍 DEBUG: About to start Test 6 - Error Handling");
-  console.log("⚠️ Test 6: Error Handling");
+  // Test 8: Resend Confirmation Code (New feature)
+  console.log("Test 8: Resend Confirmation Code");
   try {
-    console.log("🔍 DEBUG: Testing error handling with invalid credentials");
+    await cognitoService.resendConfirmationCode(testUser.username);
+    console.log("✓ Confirmation code resent");
+  } catch (error: any) {
+    console.log("- Resend confirmation:", error.message);
+  }
+  console.log("-".repeat(50));
+
+  // Test 9: Error Handling
+  console.log("Test 9: Error Handling");
+  try {
     await cognitoService.loginUser({
       username: "nonexistent@example.com",
       password: "wrongpassword"
     });
-  } catch (error: any) {
-    console.log("🔍 DEBUG: Error handling test completed");
-    console.log("✅ Error handling works correctly");
+  } catch (error: any) {  
+    console.log("✓ Error handling works correctly");
     console.log("Expected error:", error.message);
   }
-  console.log("\n" + "=".repeat(50) + "\n");
+  console.log("-".repeat(50));
 
-  // Test 7: SECRET_HASH Verification
-  console.log("🔍 DEBUG: About to start Test 7 - SECRET_HASH Verification");
-  console.log("🔐 Test 7: SECRET_HASH Verification");
-  try {
-    console.log("🔍 DEBUG: Creating service with secret");
-    const serviceWithSecret = new CognitoService(testConfig);
-    console.log("✅ Service with SECRET_HASH initialized");
-    
-    console.log("🔍 DEBUG: Creating service without secret");
-    const serviceWithoutSecret = new CognitoService({
-      clientId: testConfig.clientId,
-      userPoolId: testConfig.userPoolId,
-      region: testConfig.region
-    });
-    console.log("✅ Service without SECRET_HASH initialized");
-    
-    console.log("🔍 Both configurations are working");
-  } catch (error: any) {
-    console.error("🔍 DEBUG: Error in SECRET_HASH test");
-    console.error("❌ SECRET_HASH test failed:", error.message);
-  }
-  console.log("🔍 DEBUG: SECRET_HASH test completed");
-
-  console.log("\n" + "🎉 All tests completed!");
-  console.log("🔍 DEBUG: runTests function completed successfully");
+  console.log("All tests completed!");
 }
 
-// Main execution function
 async function main() {
-  console.log("🔍 DEBUG: Entering main function");
-  console.log("Choose test mode:");
-  console.log("1. Full test suite: npm run dev");
-  console.log("2. Individual test: npm run dev:single\n");
-  
-  console.log("🔍 DEBUG: About to call runTests()");
+  console.log("Running CognitoService test suite\n");
   
   try {
-    // Run full test suite
     await runTests();
-    console.log("🔍 DEBUG: runTests() completed successfully");
   } catch (error) {
-    console.error("🔍 DEBUG: Error caught in main function");
-    console.error("💥 Main function error:", error);
+    console.error("Fatal error:", error);
     console.error("Stack:", (error as Error).stack);
   }
-  
-  console.log("🔍 DEBUG: main function completed");
 }
 
-// Only run if this file is executed directly
-console.log("🔍 DEBUG: About to check if file is executed directly");
-console.log("🔍 DEBUG: import.meta.url:", import.meta.url);
-console.log("🔍 DEBUG: process.argv[1]:", process.argv[1]);
-
-// Fix for Windows path comparison
-// import { pathToFileURL } from 'url';
+// Execute if run directly
 const currentFileUrl = import.meta.url;
 const mainFileUrl = pathToFileURL(process.argv[1]).href;
 
-console.log("🔍 DEBUG: currentFileUrl:", currentFileUrl);
-console.log("🔍 DEBUG: mainFileUrl:", mainFileUrl);
-console.log("🔍 DEBUG: URLs match:", currentFileUrl === mainFileUrl);
-
 if (currentFileUrl === mainFileUrl) {
-  console.log("🔍 DEBUG: File is being executed directly, calling main()");
   main().catch((error) => {
-    console.error("🔍 DEBUG: Error caught in top-level catch");
-    console.error("💥 Fatal error:", error);
-    console.error("Stack:", error.stack);
+    console.error("Unhandled error:", error);
     process.exit(1);
   });
-} else {
-  console.log("🔍 DEBUG: File is being imported, not executed directly");
 }
-
-console.log("🔍 DEBUG: Script reached end of file");

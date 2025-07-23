@@ -1,101 +1,113 @@
-# 🛡️ AWSForge
+# AWSForge
 
-A modern, Enterprise-grade AWS Cognito authentication module for Node.js applications, with full support for user registration, login, confirmation, and password recovery using JWT handling.
-
----
+Enterprise-grade AWS Cognito authentication module for Node.js applications with TypeScript support.
 
 ## Features
 
-1. **User Registration** with Email OTP confirmation
-2. **Secure Login** with Cognito JWT tokens
-3. **Forgot Password** flow
-4. **Custom Attribute Validation**
-5. **Extensible Configuration Presets**
-6. Built with TypeScript for full type-safety
-7. Ready for ESM environments (`type: "module"`)
+- User registration with email OTP confirmation
+- Secure login with Cognito JWT tokens
+- Password recovery and reset flows
+- Token verification and refresh
+- Custom attribute validation
+- User profile management
+- Full TypeScript support
+- ESM ready
+- Multiple usage patterns (functional, class-based, service-based)
 
----
-
-## 📦 Installation
+## Installation
 
 ```bash
 npm install awsforge
 ```
 
-or
+## Environment Configuration
 
-```bash
-yarn add awsforge
-```
-
----
-
-## 📁 Project Structure
-
-```
-awsforge/
-|   .gitignore
-|   dev-test.js
-|   dev-test.ts
-|   package-lock.json
-|   package.json
-|   README.md
-|   tsconfig.json
-|
-+---src
-|   |   index.js
-|   |   index.ts
-|   |
-|   +---config
-|   |       packageConfig.ts
-|   |
-|   +---services
-|   |       cognito.js
-|   |       cognito.ts
-|   |
-|   +---types
-|   |       index.js
-|   |       index.ts
-|   |
-|   \---utils
-|           tokenManager.js
-|           tokenManager.ts
-|
-\---test
-        cognito.test.ts
-```
----
-
-## ⚙️ Environment Configuration
-
-Create a `.env` file in your root directory with the following values:
+All environment variables are required for proper functionality:
 
 ```env
 AWS_REGION=us-east-1
-AWS_ACCESS_KEY=YOUR_AWS_ACCESS_KEY
-AWS_SECRET_KEY=YOUR_AWS_SECRET_KEY
-USER_POOL_ID=YOUR_COGNITO_USER_POOL_ID
-CLIENT_ID=YOUR_COGNITO_APP_CLIENT_ID
-CLIENT_SECRET=YOUR_COGNITO_APP_CLIENT_SECRET  # Optional
+AWS_ACCESS_KEY=your_aws_access_key
+AWS_SECRET_KEY=your_aws_secret_key
+USER_POOL_ID=your_cognito_user_pool_id
+CLIENT_ID=your_cognito_app_client_id
+CLIENT_SECRET=your_cognito_app_client_secret
 ```
 
-These will be injected using dotenv.
+**Important**: All variables must be set. Missing variables will cause authentication failures.
 
----
+## Usage Patterns
 
-## 🚀 Usage
+AWSForge offers multiple ways to use the library based on your preferences:
 
-### 1. Import & Initialize the Service
+### 1. Functional API (Recommended)
+
+The simplest way to get started with a functional approach:
+
+```typescript
+import createCognito from 'awsforge';
+
+const cognito = createCognito({
+  region: process.env.AWS_REGION,
+  userPoolId: process.env.USER_POOL_ID,
+  clientId: process.env.CLIENT_ID,
+  clientSecret: process.env.CLIENT_SECRET,
+});
+
+// Quick registration
+const result = await cognito.register({
+  username: 'john_doe',
+  password: 'SecurePassword123!',
+  email: 'john@example.com',
+  firstName: 'John',
+  lastName: 'Doe'
+});
+
+// Quick login
+const loginResult = await cognito.login({
+  username: 'john@example.com',
+  password: 'SecurePassword123!'
+});
+```
+
+### 2. Class-based API
+
+For a more structured approach:
+
+```typescript
+import { AWSForge } from 'awsforge';
+
+const aws = new AWSForge({
+  region: process.env.AWS_REGION,
+  userPoolId: process.env.USER_POOL_ID,
+  clientId: process.env.CLIENT_ID,
+  clientSecret: process.env.CLIENT_SECRET,
+});
+
+// Use cognito methods
+const result = await aws.cognito.register({
+  username: 'john_doe',
+  password: 'SecurePassword123!',
+  email: 'john@example.com'
+});
+
+// Access utilities
+const tokens = aws.utils.extractTokens(loginResult);
+```
+
+### 3. Service-based API (Original)
+
+For full control and advanced configurations:
 
 ```typescript
 import { CognitoService, CognitoConfigs } from 'awsforge';
 
+// Initialize with custom attributes
 const cognito = new CognitoService(
   CognitoConfigs.withCustomAttributes(
     {
-      region: process.env.AWS_REGION!,
-      userPoolId: process.env.USER_POOL_ID!,
-      clientId: process.env.CLIENT_ID!,
+      region: process.env.AWS_REGION,
+      userPoolId: process.env.USER_POOL_ID,
+      clientId: process.env.CLIENT_ID,
       clientSecret: process.env.CLIENT_SECRET,
     },
     ['plan', 'role'] // Allowed custom attributes
@@ -103,144 +115,373 @@ const cognito = new CognitoService(
 );
 ```
 
----
+## API Reference
 
-## CognitoService API
+### User Registration
 
-### `registerUser(registrationData)`
-
-Registers a new user with AWS Cognito.
+Register a new user with email confirmation:
 
 ```typescript
-await cognito.registerUser({
-  username: 'john',
-  password: 'StrongPass123!',
+// Functional API
+const registrationResult = await cognito.register({
+  username: 'john_doe',
+  password: 'SecurePassword123!',
   email: 'john@example.com',
   firstName: 'John',
   lastName: 'Doe',
-  phoneNumber: '+11234567890',
+  phoneNumber: '+1234567890',
   customAttributes: {
-    plan: 'pro',
-    role: 'admin'
+    plan: 'premium',
+    role: 'user'
   }
+});
+
+// Class-based API
+const registrationResult = await aws.cognito.register({
+  username: 'john_doe',
+  password: 'SecurePassword123!',
+  email: 'john@example.com',
+  firstName: 'John',
+  lastName: 'Doe'
+});
+
+// Service-based API
+const registrationResult = await cognitoService.registerUser({
+  username: 'john_doe',
+  password: 'SecurePassword123!',
+  email: 'john@example.com',
+  firstName: 'John',
+  lastName: 'Doe'
 });
 ```
 
-**Returns:** AWS Cognito SignUpCommand response
+### Confirm Registration
 
-### `confirmUserRegistration({ username, confirmationCode })`
-
-Confirms the user using the OTP code sent to their email.
+Confirm user registration with OTP code:
 
 ```typescript
-await cognito.confirmUserRegistration({
+// Functional API
+await cognito.confirmRegistration({
+  username: 'john@example.com',
+  confirmationCode: '123456'
+});
+
+// Class-based API
+await aws.cognito.confirmRegistration({
+  username: 'john@example.com',
+  confirmationCode: '123456'
+});
+
+// Service-based API
+await cognitoService.confirmUserRegistration({
   username: 'john@example.com',
   confirmationCode: '123456'
 });
 ```
 
-### `loginUser({ username, password })`
+### User Login
 
-Logs in the user and returns JWT tokens.
+Authenticate user and receive JWT tokens:
 
 ```typescript
-const loginResponse = await cognito.loginUser({
+// All APIs support the same login method
+const loginResult = await cognito.login({
   username: 'john@example.com',
-  password: 'StrongPass123!'
+  password: 'SecurePassword123!'
 });
+
+// Access tokens from result
+const { 
+  AccessToken, 
+  IdToken, 
+  RefreshToken 
+} = loginResult.AuthenticationResult;
 ```
 
-### `initiateForgotPassword({ username })`
+### Token Verification
 
-Initiates forgot password process (sends reset code).
+Verify JWT tokens:
 
 ```typescript
-await cognito.initiateForgotPassword({
+// Verify access token (all APIs)
+const accessTokenResult = await cognito.verifyAccessToken(accessToken);
+if (accessTokenResult.isValid) {
+  console.log('Token is valid:', accessTokenResult.decoded);
+} else {
+  console.error('Token error:', accessTokenResult.error);
+}
+
+// Verify ID token
+const idTokenResult = await cognito.verifyIdToken(idToken);
+
+// Generic token verification
+const tokenResult = await cognito.verifyToken(anyToken);
+```
+
+### Get User Profile
+
+Retrieve user information using access token:
+
+```typescript
+const userProfile = await cognito.getUserFromToken(accessToken);
+console.log('User:', userProfile.username);
+console.log('Attributes:', userProfile.attributes);
+```
+
+### Refresh Tokens
+
+Refresh expired access tokens:
+
+```typescript
+const refreshResult = await cognito.refreshTokens(refreshToken);
+const newAccessToken = refreshResult.AuthenticationResult?.AccessToken;
+```
+
+### Password Reset
+
+Initiate password reset flow:
+
+```typescript
+// Send reset code (functional/class API)
+await cognito.forgotPassword({
   username: 'john@example.com'
 });
+
+// Service API
+await cognitoService.initiateForgotPassword({
+  username: 'john@example.com'
+});
+
+// Confirm new password with code (all APIs)
+await cognito.confirmForgotPassword({
+  username: 'john@example.com',
+  confirmationCode: '123456',
+  newPassword: 'NewSecurePassword123!'
+});
 ```
 
-_Note: You can later extend with confirm-reset functionality as well._
+### Change Password
 
----
+Change password for authenticated user:
 
-## Configuration Helpers
+```typescript
+await cognito.changePassword({
+  accessToken: accessToken,
+  previousPassword: 'OldPassword123!',
+  proposedPassword: 'NewPassword123!'
+});
+```
 
-### `CognitoConfigs.minimal(baseConfig)`
+### Additional Operations
 
-Allows no custom attributes.
+```typescript
+// Resend confirmation code
+await cognito.resendConfirmationCode('john@example.com');
 
-### `CognitoConfigs.withCustomAttributes(baseConfig, customAttributes[])`
+// Delete user account
+await cognito.deleteUser(accessToken);
 
-Strictly allows only the listed custom attributes.
+// Revoke token
+await cognito.revokeToken(refreshToken);
+```
 
-### `CognitoConfigs.permissive(baseConfig)`
+## Configuration Options
 
-Disables custom attribute validation altogether (⚠️ use with caution).
+### Functional API Configuration
 
----
+```typescript
+import createCognito from 'awsforge';
 
-## Utility: Token Extraction
+// Basic configuration
+const cognito = createCognito({
+  region: process.env.AWS_REGION,
+  userPoolId: process.env.USER_POOL_ID,
+  clientId: process.env.CLIENT_ID,
+  clientSecret: process.env.CLIENT_SECRET,
+});
 
-If you're using the login response and want to extract tokens:
+// Access configuration presets
+const { minimal, withCustomAttributes, permissive } = cognito.configs;
+```
+
+### Class-based API Configuration
+
+```typescript
+import { AWSForge } from 'awsforge';
+
+const aws = new AWSForge({
+  region: process.env.AWS_REGION,
+  userPoolId: process.env.USER_POOL_ID,
+  clientId: process.env.CLIENT_ID,
+  clientSecret: process.env.CLIENT_SECRET,
+});
+
+// Access configuration presets
+const configs = AWSForge.configs;
+```
+
+### Service-based API Configuration
+
+#### Minimal Configuration
+No custom attributes allowed:
+
+```typescript
+import { CognitoService, CognitoConfigs } from 'awsforge';
+
+const cognito = new CognitoService(
+  CognitoConfigs.minimal({
+    region: process.env.AWS_REGION,
+    userPoolId: process.env.USER_POOL_ID,
+    clientId: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
+  })
+);
+```
+
+#### Custom Attributes
+Specify allowed custom attributes:
+
+```typescript
+const cognito = new CognitoService(
+  CognitoConfigs.withCustomAttributes(baseConfig, ['plan', 'role', 'department'])
+);
+```
+
+#### Permissive Mode
+Disable custom attribute validation (use with caution):
+
+```typescript
+const cognito = new CognitoService(
+  CognitoConfigs.permissive(baseConfig)
+);
+```
+
+## Token Utilities
+
+Extract tokens from login response:
 
 ```typescript
 import { extractTokens } from 'awsforge';
+// or
+import createCognito from 'awsforge';
+const cognito = createCognito(config);
 
-const tokens = extractTokens(loginResponse);
-console.log(tokens.accessToken);
+// Direct import
+const tokens = extractTokens(loginResult);
+
+// Via functional API
+const tokens = cognito.utils.extractTokens(loginResult);
+
+// Via class API
+const aws = new AWSForge(config);
+const tokens = aws.utils.extractTokens(loginResult);
+
+console.log('Access Token:', tokens.accessToken);
+console.log('ID Token:', tokens.idToken);
+console.log('Refresh Token:', tokens.refreshToken);
 ```
 
----
+## Import Options
 
-## Testing Locally
+### Default Import (Functional API)
+```typescript
+import createCognito from 'awsforge';
+const cognito = createCognito(config);
+```
 
-Create a test file:
+### Named Imports
+```typescript
+import { AWSForge, CognitoService, CognitoConfigs, extractTokens } from 'awsforge';
+```
+
+### Mixed Imports
+```typescript
+import createCognito, { AWSForge, extractTokens } from 'awsforge';
+```
+
+### Type Imports
+```typescript
+import type {
+  AWSForgeConfig,
+  UserRegistrationData,
+  UserLoginData,
+  AuthTokens,
+  AuthResponse,
+  TokenVerificationResult,
+  UserProfile,
+  ChangePasswordData,
+  ConfirmForgotPasswordData
+} from 'awsforge';
+```
+
+## Error Handling
+
+All methods throw descriptive errors. Always wrap calls in try-catch blocks:
 
 ```typescript
-import 'dotenv/config';
-import { CognitoService, CognitoConfigs } from './dist';
-
-const cognito = new CognitoService(/* config */);
-
-await cognito.registerUser(/* user data */);
+try {
+  await cognito.register(userData);
+} catch (error) {
+  if (error.name === 'UsernameExistsException') {
+    console.error('User already exists');
+  } else if (error.name === 'InvalidParameterException') {
+    console.error('Invalid parameters provided');
+  } else {
+    console.error('Registration failed:', error.message);
+  }
+}
 ```
 
-Run with:
+## Migration Guide
+
+### From Service-based to Functional API
+
+**Before:**
+```typescript
+import { CognitoService, CognitoConfigs } from 'awsforge';
+const cognito = new CognitoService(CognitoConfigs.minimal(config));
+await cognito.registerUser(userData);
+```
+
+**After:**
+```typescript
+import createCognito from 'awsforge';
+const cognito = createCognito(config);
+await cognito.register(userData);
+```
+
+### From Service-based to Class-based API
+
+**Before:**
+```typescript
+import { CognitoService } from 'awsforge';
+const cognito = new CognitoService(config);
+await cognito.registerUser(userData);
+```
+
+**After:**
+```typescript
+import { AWSForge } from 'awsforge';
+const aws = new AWSForge(config);
+await aws.cognito.register(userData);
+```
+
+## Development
+
+Run tests locally:
 
 ```bash
-npx ts-node --loader ts-node/esm dev-test.ts
+npm test
 ```
 
----
+Build the project:
 
-## 📚 Types
+```bash
+npm run build
+```
 
-Exported from `src/types/index.ts`, for usage in consumers:
-
-- `AWSForgeConfig`
-- `UserRegistrationData`
-- `AuthTokens`
-- `AuthResponse`
-- `ResetPasswordData`
-
-And more...
-
----
-
-## NPM Publishing Notes
-
-- This package is published with `"type": "module"`
-- Only `dist/`, `README.md`, and `LICENSE` are shipped
-- Written in TypeScript and compiled to ESM `.js` for use
-- No runtime deps except `@aws-sdk` and `jsonwebtoken`
-
----
-
-## 📄 License
+## License
 
 MIT © 2025 Avdhut Noola
 
 Contributions welcome via GitHub issues or pull requests.
-
----

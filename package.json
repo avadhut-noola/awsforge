@@ -1,6 +1,6 @@
 {
   "name": "@ssktechnologies/awsforge",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Enterprise-grade AWS Cognito authentication toolkit for seamless user management, registration, login, and password recovery with JWT token handling",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

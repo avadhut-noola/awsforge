@@ -13,18 +13,13 @@ export interface AWSForgeConfig {
 }
 
 export interface UserRegistrationData {
-  username: string;
-  password: string;
   email: string;
+  password: string;
+  username?: string;
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
   customAttributes?: Record<string, string>;
-}
-
-export interface ConfirmRegistrationData {
-  username: string;
-  confirmationCode: string;
 }
 
 export interface UserLoginData {
@@ -36,53 +31,85 @@ export interface ForgotPasswordData {
   username: string;
 }
 
-export interface ResetPasswordData {
+export interface ConfirmRegistrationData {
+  username: string;
+  confirmationCode: string;
+}
+
+// NEW: Additional interfaces for enhanced functionality
+export interface ConfirmForgotPasswordData {
   username: string;
   confirmationCode: string;
   newPassword: string;
 }
 
+export interface ChangePasswordData {
+  accessToken: string;
+  previousPassword: string;
+  proposedPassword: string;
+}
+
+export interface DecodedToken {
+  sub: string;
+  iss: string;
+  aud: string;
+  exp: number;
+  iat: number;
+  token_use: 'access' | 'id';
+  username?: string;
+  email?: string;
+  email_verified?: boolean;
+  phone_number?: string;
+  phone_number_verified?: boolean;
+  given_name?: string;
+  family_name?: string;
+  preferred_username?: string;
+  [key: string]: any; // For custom attributes
+}
+
+export interface TokenVerificationResult {
+  isValid: boolean;
+  decoded?: DecodedToken;
+  error?: string;
+}
+
+export interface UserProfile {
+  username: string;
+  attributes: Record<string, string>;
+}
+
+// NEW: Authentication response types
 export interface AuthTokens {
   accessToken: string;
   idToken: string;
   refreshToken: string;
+  expiresIn: number;
 }
 
-export interface AuthResponse {
-  success: boolean;
-  message: string;
-  data?: any;
-  tokens?: AuthTokens;
-  error?: string;
+export interface LoginResponse {
+  tokens: AuthTokens;
+  user: UserProfile;
 }
 
-export interface CognitoUserAttributes {
-  [key: string]: string;
+// NEW: Enhanced configuration options
+export interface TokenConfig {
+  autoRefresh?: boolean;
+  refreshThreshold?: number; // Minutes before expiry to auto-refresh
+  onTokenRefresh?: (tokens: AuthTokens) => void;
+  onTokenExpired?: () => void;
 }
 
-export interface DecodedJWT {
-  sub: string;
-  email: string;
-  email_verified: boolean;
-  iss: string;
-  aud: string;
-  token_use: string;
-  exp: number;
-  iat: number;
-  [key: string]: any;
-}
-
-export interface CookieOptions {
-  httpOnly?: boolean;
-  secure?: boolean;
-  sameSite?: 'strict' | 'lax' | 'none';
-  maxAge?: number;
-  domain?: string;
-  path?: string;
-}
-
-export interface AWSForgeError extends Error {
+// Error types for better error handling
+export interface CognitoError {
   code: string;
-  statusCode: number;
-  retryable?: boolean;
+  message: string;
+  statusCode?: number;
+}
+
+// Session management
+export interface UserSession {
+  tokens: AuthTokens;
+  user: UserProfile;
+  expiresAt: Date;
+  isValid: boolean;
 }

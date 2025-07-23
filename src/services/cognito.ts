@@ -1,5 +1,7 @@
 // src/services/cognito.ts
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import jwksClient from 'jwks-rsa';
 import { PackageConfig, CognitoConfig } from '../config/packageConfig.js';
 
 import {
@@ -8,6 +10,12 @@ import {
   ConfirmSignUpCommand,
   InitiateAuthCommand,
   ForgotPasswordCommand,
+  ConfirmForgotPasswordCommand,
+  GetUserCommand,
+  ChangePasswordCommand,
+  DeleteUserCommand,
+  ResendConfirmationCodeCommand,
+  RevokeTokenCommand,
   AuthFlowType,
 } from "@aws-sdk/client-cognito-identity-provider";
 
@@ -16,11 +24,17 @@ import {
   UserLoginData,
   ForgotPasswordData,
   ConfirmRegistrationData,
+  TokenVerificationResult,
+  DecodedToken,
+  UserProfile,
+  ChangePasswordData,
+  ConfirmForgotPasswordData,
 } from "../types/index.js";
 
 export class CognitoService {
   private config: PackageConfig;
   private client: CognitoIdentityProviderClient;
+  private jwksClient: jwksClient.JwksClient;
 
   constructor(userConfig: Partial<CognitoConfig> = {}) {
     this.config = new PackageConfig({
@@ -36,11 +50,19 @@ export class CognitoService {
         secretAccessKey: process.env.AWS_SECRET_KEY!,
       },
     });
+
+    // Initialize JWKS client for token verification
+    this.jwksClient = jwksClient({
+      jwksUri: `https://cognito-idp.${this.config.cognito.region}.amazonaws.com/${this.config.cognito.userPoolId}/.well-known/jwks.json`,
+      cache: true,
+      cacheMaxAge: 3600000, // 1 hour
+      cacheMaxEntries: 5,
+    });
   }
 
-  private generateSecretHash(username: string): string | null {
+  private generateSecretHash(username: string): string | undefined {
     if (!this.config.cognito.clientSecret) {
-      return null; // No secret hash if no client secret
+      return undefined;
     }
     
     const message = username + this.config.cognito.clientId;
@@ -82,7 +104,6 @@ export class CognitoService {
   private buildUserAttributes(registrationData: UserRegistrationData): any[] {
     const attributes = [];
 
-    // Standard attributes
     if (registrationData.email) {
       attributes.push({ Name: 'email', Value: registrationData.email });
     }
@@ -99,7 +120,6 @@ export class CognitoService {
       attributes.push({ Name: 'phone_number', Value: registrationData.phoneNumber });
     }
 
-    // Custom attributes (validated)
     if (registrationData.customAttributes) {
       const validCustomAttributes = this.validateCustomAttributes(registrationData.customAttributes);
       
@@ -114,7 +134,249 @@ export class CognitoService {
     return attributes;
   }
 
-  // Register a new user (UNCONFIRMED)
+  // Token Verification Methods
+  async verifyToken(token: string, skipAudienceCheck: boolean = false): Promise<TokenVerificationResult> {
+    try {
+      const decoded = jwt.decode(token, { complete: true }) as any;
+      
+      if (!decoded || !decoded.header || !decoded.payload) {
+        return {
+          isValid: false,
+          error: 'Invalid token format',
+        };
+      }
+
+      // Get the signing key
+      const key = await this.jwksClient.getSigningKey(decoded.header.kid);
+      const signingKey = key.getPublicKey();
+
+      // Verify token with or without audience check
+      const verifyOptions: jwt.VerifyOptions = {
+        issuer: `https://cognito-idp.${this.config.cognito.region}.amazonaws.com/${this.config.cognito.userPoolId}`,
+      };
+
+      // Only check audience for ID tokens, not access tokens
+      if (!skipAudienceCheck) {
+        verifyOptions.audience = this.config.cognito.clientId;
+      }
+
+      const payload = jwt.verify(token, signingKey, verifyOptions) as DecodedToken;
+
+      // Check if token is expired
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (payload.exp < currentTime) {
+        return {
+          isValid: false,
+          error: 'Token expired',
+          decoded: payload,
+        };
+      }
+
+      return {
+        isValid: true,
+        decoded: payload,
+      };
+    } catch (error) {
+      return {
+        isValid: false,
+        error: error instanceof Error ? error.message : 'Token verification failed',
+      };
+    }
+  }
+
+  async verifyAccessToken(accessToken: string): Promise<TokenVerificationResult> {
+    // Skip audience check for access tokens as they use User Pool ID as audience
+    const result = await this.verifyToken(accessToken, true);
+    
+    if (result.isValid && result.decoded?.token_use && result.decoded.token_use !== 'access') {
+      return {
+        isValid: false,
+        error: 'Token is not an access token',
+        decoded: result.decoded,
+      };
+    }
+    
+    return result;
+  }
+
+  async verifyIdToken(idToken: string): Promise<TokenVerificationResult> {
+    // Use audience check for ID tokens
+    const result = await this.verifyToken(idToken, false);
+    
+    if (result.isValid && result.decoded?.token_use && result.decoded.token_use !== 'id') {
+      return {
+        isValid: false,
+        error: 'Token is not an ID token',
+        decoded: result.decoded,
+      };
+    }
+    
+    return result;
+  }
+
+  // Get user profile from token
+  async getUserFromToken(accessToken: string): Promise<UserProfile> {
+    const command = new GetUserCommand({
+      AccessToken: accessToken,
+    });
+
+    const response = await this.client.send(command);
+    
+    const userProfile: UserProfile = {
+      username: response.Username!,
+      attributes: {},
+    };
+
+    response.UserAttributes?.forEach(attr => {
+      if (attr.Name && attr.Value) {
+        userProfile.attributes[attr.Name] = attr.Value;
+      }
+    });
+
+    return userProfile;
+  }
+
+  // Helper method to extract username from JWT token - IMPROVED
+  private extractUsernameFromToken(refreshToken: string): string | undefined {
+    try {
+      const decoded = jwt.decode(refreshToken) as any;
+      
+      // For Cognito refresh tokens, we need to use the SUB (subject) for SecretHash
+      // This is a poorly documented requirement from AWS Cognito
+      return decoded?.username || 
+             decoded?.email || 
+             decoded?.sub || 
+             decoded?.preferred_username || 
+             undefined;
+    } catch (error) {
+      console.error('Error extracting username from token:', error);
+      return undefined;
+    }
+  }
+
+  // Helper method to get SUB from access token
+  private getSubFromAccessToken(accessToken: string): string | undefined {
+    try {
+      const decoded = jwt.decode(accessToken) as any;
+      return decoded?.sub;
+    } catch (error) {
+      console.error('Error extracting SUB from access token:', error);
+      return undefined;
+    }
+  }
+
+  // Refresh tokens - FIXED VERSION with SUB handling
+  async refreshTokens(refreshToken: string, username?: string, accessToken?: string) {
+    const authParameters: any = {
+      REFRESH_TOKEN: refreshToken,
+    };
+
+    // If client secret is configured, we need SECRET_HASH
+    if (this.config.cognito.clientSecret) {
+      let usernameForHash = username;
+      
+      // Try to get SUB from access token first (most reliable for refresh)
+      if (!usernameForHash && accessToken) {
+        try {
+          const userProfile = await this.getUserFromToken(accessToken);
+          usernameForHash = userProfile.attributes.sub || userProfile.username;
+          console.log('Using SUB from user profile for SECRET_HASH:', usernameForHash);
+        } catch (error) {
+          console.warn('Could not get user profile from access token:', error);
+          // Fall back to token extraction
+          usernameForHash = this.getSubFromAccessToken(accessToken);
+        }
+      }
+      
+      // If still no username, try to extract from refresh token
+      if (!usernameForHash) {
+        usernameForHash = this.extractUsernameFromToken(refreshToken);
+      }
+      
+      if (!usernameForHash) {
+        throw new Error('Username/SUB is required for refresh token when using client secret. Cannot extract from tokens.');
+      }
+      
+      console.log('Using username/SUB for SECRET_HASH:', usernameForHash);
+      const secretHash = this.generateSecretHash(usernameForHash);
+      if (secretHash) {
+        authParameters.SECRET_HASH = secretHash;
+      }
+    }
+
+    const command = new InitiateAuthCommand({
+      AuthFlow: AuthFlowType.REFRESH_TOKEN_AUTH,
+      ClientId: this.config.cognito.clientId,
+      AuthParameters: authParameters,
+    });
+
+    return this.client.send(command);
+  }
+
+  // Refresh tokens with explicit username (for backwards compatibility)
+  async refreshTokensWithUsername(refreshToken: string, username: string, accessToken?: string) {
+    return this.refreshTokens(refreshToken, username, accessToken);
+  }
+
+  // Revoke tokens (logout)
+  async revokeToken(token: string) {
+    const command = new RevokeTokenCommand({
+      ClientId: this.config.cognito.clientId,
+      Token: token,
+    });
+
+    return this.client.send(command);
+  }
+
+  // Change password
+  async changePassword({ accessToken, previousPassword, proposedPassword }: ChangePasswordData) {
+    const command = new ChangePasswordCommand({
+      AccessToken: accessToken,
+      PreviousPassword: previousPassword,
+      ProposedPassword: proposedPassword,
+    });
+
+    return this.client.send(command);
+  }
+
+  // Confirm forgot password
+  async confirmForgotPassword({ username, confirmationCode, newPassword }: ConfirmForgotPasswordData) {
+    const secretHash = this.generateSecretHash(username);
+    
+    const command = new ConfirmForgotPasswordCommand({
+      ClientId: this.config.cognito.clientId,
+      Username: username,
+      ConfirmationCode: confirmationCode,
+      Password: newPassword,
+      ...(secretHash && { SecretHash: secretHash }),
+    });
+
+    return this.client.send(command);
+  }
+
+  // Resend confirmation code
+  async resendConfirmationCode(username: string) {
+    const secretHash = this.generateSecretHash(username);
+    
+    const command = new ResendConfirmationCodeCommand({
+      ClientId: this.config.cognito.clientId,
+      Username: username,
+      ...(secretHash && { SecretHash: secretHash }),
+    });
+
+    return this.client.send(command);
+  }
+
+  // Delete user
+  async deleteUser(accessToken: string) {
+    const command = new DeleteUserCommand({
+      AccessToken: accessToken,
+    });
+
+    return this.client.send(command);
+  }
+
+  // Existing methods remain the same
   async registerUser(registrationData: UserRegistrationData) {
     try {
       const userAttributes = this.buildUserAttributes(registrationData);
@@ -139,11 +401,7 @@ export class CognitoService {
     }
   }
 
-  // Confirm user registration with email OTP
-  async confirmUserRegistration({
-    username,
-    confirmationCode,
-  }: ConfirmRegistrationData) {
+  async confirmUserRegistration({ username, confirmationCode }: ConfirmRegistrationData) {
     const secretHash = this.generateSecretHash(username);
     
     const command = new ConfirmSignUpCommand({
@@ -156,7 +414,6 @@ export class CognitoService {
     return this.client.send(command);
   }
 
-  // Login user after confirmation
   async loginUser({ username, password }: UserLoginData) {
     const authParameters: any = {
       USERNAME: username,
@@ -177,7 +434,6 @@ export class CognitoService {
     return this.client.send(command);
   }
 
-  // Forgot Password Initiation
   async initiateForgotPassword({ username }: ForgotPasswordData) {
     const secretHash = this.generateSecretHash(username);
     
@@ -193,14 +449,12 @@ export class CognitoService {
 
 // Export configuration presets
 export const CognitoConfigs = {
-  // Configuration without custom attributes
   minimal: (baseConfig: Omit<CognitoConfig, 'allowedCustomAttributes' | 'validateCustomAttributes'>) => ({
     ...baseConfig,
     allowedCustomAttributes: [],
     validateCustomAttributes: true,
   }),
 
-  // Configuration with common custom attributes
   withCustomAttributes: (
     baseConfig: Omit<CognitoConfig, 'allowedCustomAttributes' | 'validateCustomAttributes'>,
     customAttributes: string[]
@@ -210,7 +464,6 @@ export const CognitoConfigs = {
     validateCustomAttributes: true,
   }),
 
-  // Configuration that allows any custom attributes (risky)
   permissive: (baseConfig: Omit<CognitoConfig, 'allowedCustomAttributes' | 'validateCustomAttributes'>) => ({
     ...baseConfig,
     validateCustomAttributes: false,

@@ -64,6 +64,9 @@ export default function createCognito(config: Partial<CognitoConfig>) {
     async revokeToken(token: string) {
       return new CognitoService(config).revokeToken(token);
     },
+    async adminCreateUser(data: import('./types/index.js').AdminCreateUserData) {
+      return new CognitoService(config).adminCreateUser(data);
+    },
   };
 }
 
@@ -86,6 +89,7 @@ export class AWSForge {
       changePassword: this.cognitoService.changePassword.bind(this.cognitoService),
       deleteUser: this.cognitoService.deleteUser.bind(this.cognitoService),
       resendConfirmationCode: this.cognitoService.resendConfirmationCode.bind(this.cognitoService),
+      adminCreateUser: this.cognitoService.adminCreateUser.bind(this.cognitoService),
       
       // Token methods
       verifyToken: this.cognitoService.verifyToken.bind(this.cognitoService),

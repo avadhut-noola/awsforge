@@ -26,12 +26,9 @@ console.log("Config loaded:", {
 
 // Test credentials
 const testUser = {
-  username: "nodetest721234567",
-  password: "TempPassword123!",
-  email: "avdhutnula2345678@gmail.com",
-  firstName: "Test",
-  lastName: "User",
-  phoneNumber: "+1234567890",
+  username: "avadhutn",
+  password: "Welcome@123",
+  email: "avadhutn@ssktech.co.in",
   customAttributes: {}
 };
 
@@ -71,9 +68,6 @@ async function runTests() {
       username: testUser.username,
       password: testUser.password,
       email: testUser.email,
-      firstName: testUser.firstName,
-      lastName: testUser.lastName,
-      phoneNumber: testUser.phoneNumber,
       customAttributes: testUser.customAttributes
     });
     console.log("✓ User registration successful");
@@ -201,6 +195,32 @@ async function runTests() {
   } catch (error: any) {  
     console.log("✓ Error handling works correctly");
     console.log("Expected error:", error.message);
+  }
+  console.log("-".repeat(50));
+
+  // Test 10: Admin Create User
+  console.log("Test 10: Admin Create User");
+  // Use a unique email for each test run to avoid conflicts
+  const uniqueEmail = `admin.created.${Date.now()}@example.com`;
+  const adminCreatedUser = {
+    username: uniqueEmail,
+    email: uniqueEmail,
+    firstName: "Admin",
+    lastName: "Created",
+    temporaryPassword: "TempPassword123!",
+  };
+  try {
+    const adminCreateResult = await cognitoService.adminCreateUser(adminCreatedUser);
+    if (adminCreateResult.User) {
+      const userSub = adminCreateResult.User.Attributes?.find(attr => attr.Name === 'sub')?.Value;
+      console.log("✓ Admin user creation successful");
+      console.log("Username:", adminCreateResult.User.Username);
+      console.log("UserSub:", userSub);
+    } else {
+      console.error("✗ Admin user creation did not return a user object.");
+    }
+  } catch (error: any) {
+    console.error("✗ Admin user creation failed:", error.message);
   }
   console.log("-".repeat(50));
 

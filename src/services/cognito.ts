@@ -16,6 +16,7 @@ import {
   DeleteUserCommand,
   ResendConfirmationCodeCommand,
   RevokeTokenCommand,
+  AdminCreateUserCommand,
   AuthFlowType,
 } from "@aws-sdk/client-cognito-identity-provider";
 
@@ -29,6 +30,7 @@ import {
   UserProfile,
   ChangePasswordData,
   ConfirmForgotPasswordData,
+  AdminCreateUserData,
 } from "../types/index.js";
 
 export class CognitoService {
@@ -101,27 +103,40 @@ export class CognitoService {
     return validAttributes;
   }
 
-  private buildUserAttributes(registrationData: UserRegistrationData): any[] {
+  private buildUserAttributes(
+    userData: {
+      email?: string;
+      username?: string;
+      firstName?: string;
+      lastName?: string;
+      phoneNumber?: string;
+      customAttributes?: Record<string, string>;
+    },
+    isAdminCreate = false
+  ): any[] {
     const attributes = [];
 
-    if (registrationData.email) {
-      attributes.push({ Name: 'email', Value: registrationData.email });
+    if (userData.email) {
+      attributes.push({ Name: 'email', Value: userData.email });
+      if (isAdminCreate) {
+        attributes.push({ Name: 'email_verified', Value: 'true' });
+      }
     }
-    if (registrationData.username) {
-      attributes.push({ Name: 'preferred_username', Value: registrationData.username });
+    if (userData.username) {
+      attributes.push({ Name: 'preferred_username', Value: userData.username });
     }
-    if (registrationData.firstName) {
-      attributes.push({ Name: 'given_name', Value: registrationData.firstName });
+    if (userData.firstName) {
+      attributes.push({ Name: 'given_name', Value: userData.firstName });
     }
-    if (registrationData.lastName) {
-      attributes.push({ Name: 'family_name', Value: registrationData.lastName });
+    if (userData.lastName) {
+      attributes.push({ Name: 'family_name', Value: userData.lastName });
     }
-    if (registrationData.phoneNumber) {
-      attributes.push({ Name: 'phone_number', Value: registrationData.phoneNumber });
+    if (userData.phoneNumber) {
+      attributes.push({ Name: 'phone_number', Value: userData.phoneNumber });
     }
 
-    if (registrationData.customAttributes) {
-      const validCustomAttributes = this.validateCustomAttributes(registrationData.customAttributes);
+    if (userData.customAttributes) {
+      const validCustomAttributes = this.validateCustomAttributes(userData.customAttributes);
       
       attributes.push(
         ...Object.entries(validCustomAttributes).map(([key, value]) => ({
@@ -376,10 +391,41 @@ export class CognitoService {
     return this.client.send(command);
   }
 
+  /**
+   * Creates a new user in the user pool as an administrator.
+   * This action does not require a client secret but does require AWS credentials with admin permissions.
+   * It can set a temporary password and bypasses the confirmation loop by marking the email as verified.
+   * @param userData - The user data for the new user.
+   * @returns The result of the AdminCreateUser command.
+   */
+  async adminCreateUser(userData: AdminCreateUserData) {
+    try {
+      // The `buildUserAttributes` method is reused here.
+      // The `true` flag marks the user's email as verified.
+      const userAttributes = this.buildUserAttributes(userData, true);
+
+      const command = new AdminCreateUserCommand({
+        UserPoolId: this.config.cognito.userPoolId,
+        Username: userData.username,
+        UserAttributes: userAttributes,
+        TemporaryPassword: userData.temporaryPassword,
+        // Suppress the default welcome email from Cognito.
+        // Your application should handle notifying the user with their temporary password.
+        MessageAction: 'SUPPRESS',
+      });
+
+      const response = await this.client.send(command);
+      return response;
+    } catch (error) {
+      console.error('Admin user creation error:', error);
+      throw error;
+    }
+  }
+
   // Existing methods remain the same
   async registerUser(registrationData: UserRegistrationData) {
     try {
-      const userAttributes = this.buildUserAttributes(registrationData);
+      const userAttributes = this.buildUserAttributes(registrationData, false);
       
       console.log('Registering user with attributes:', userAttributes);
 

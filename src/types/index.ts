@@ -113,3 +113,15 @@ export interface UserSession {
   expiresAt: Date;
   isValid: boolean;
 }
+
+// Admin user creation
+export interface AdminCreateUserData {
+  fullName?: string;
+  username: string;
+  email: string;
+  /** An optional temporary password for the user.
+   * If not provided, the user will be in a `FORCE_CHANGE_PASSWORD` 
+   * state upon first login. */
+  temporaryPassword?: string;
+  customAttributes?: Record<string, string>;
+}

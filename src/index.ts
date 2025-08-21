@@ -12,60 +12,66 @@ export { CognitoService, CognitoConfigs, CognitoConfig, PackageConfig, extractTo
 
 // NEW: Global factory function for simplified usage
 export default function createCognito(config: Partial<CognitoConfig>) {
+  // Create a single, reusable service instance
+  const service = new CognitoService(config);
+
   return {
     // Service instance
-    service: new CognitoService(config),
-    
+    service,
+
     // Configuration presets
     configs: CognitoConfigs,
-    
+
     // Utility functions
     utils: {
       extractTokens,
     },
-    
+
     // Quick access methods (delegates to service)
     async register(data: import('./types/index.js').UserRegistrationData) {
-      return new CognitoService(config).registerUser(data);
+      return service.registerUser(data);
     },
-    
+
     async login(data: import('./types/index.js').UserLoginData) {
-      return new CognitoService(config).loginUser(data);
+      return service.loginUser(data);
     },
-    
+
     async confirmRegistration(data: import('./types/index.js').ConfirmRegistrationData) {
-      return new CognitoService(config).confirmUserRegistration(data);
+      return service.confirmUserRegistration(data);
     },
-    
+
     async forgotPassword(data: import('./types/index.js').ForgotPasswordData) {
-      return new CognitoService(config).initiateForgotPassword(data);
+      return service.initiateForgotPassword(data);
     },
-    
+
     async verifyToken(token: string) {
-      return new CognitoService(config).verifyToken(token);
+      return service.verifyToken(token);
     },
-    
+
     async verifyAccessToken(token: string) {
-      return new CognitoService(config).verifyAccessToken(token);
+      return service.verifyAccessToken(token);
     },
-    
+
     async verifyIdToken(token: string) {
-      return new CognitoService(config).verifyIdToken(token);
+      return service.verifyIdToken(token);
     },
-    
+
     async getUserFromToken(accessToken: string) {
-      return new CognitoService(config).getUserFromToken(accessToken);
+      return service.getUserFromToken(accessToken);
     },
-    
+
     async refreshTokens(refreshToken: string) {
-      return new CognitoService(config).refreshTokens(refreshToken);
+      return service.refreshTokens(refreshToken);
     },
-    
+
     async revokeToken(token: string) {
-      return new CognitoService(config).revokeToken(token);
+      return service.revokeToken(token);
     },
     async adminCreateUser(data: import('./types/index.js').AdminCreateUserData) {
-      return new CognitoService(config).adminCreateUser(data);
+      return service.adminCreateUser(data);
+    },
+    async respondToNewPasswordChallenge(data: import('./types/index.js').RespondToNewPasswordChallengeData) {
+      return service.respondToNewPasswordChallenge(data);
     },
   };
 }
@@ -90,7 +96,8 @@ export class AWSForge {
       deleteUser: this.cognitoService.deleteUser.bind(this.cognitoService),
       resendConfirmationCode: this.cognitoService.resendConfirmationCode.bind(this.cognitoService),
       adminCreateUser: this.cognitoService.adminCreateUser.bind(this.cognitoService),
-      
+      respondToNewPasswordChallenge: this.cognitoService.respondToNewPasswordChallenge.bind(this.cognitoService),
+
       // Token methods
       verifyToken: this.cognitoService.verifyToken.bind(this.cognitoService),
       verifyAccessToken: this.cognitoService.verifyAccessToken.bind(this.cognitoService),

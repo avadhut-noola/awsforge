@@ -17,6 +17,8 @@ import {
   ResendConfirmationCodeCommand,
   RevokeTokenCommand,
   AdminCreateUserCommand,
+  RespondToAuthChallengeCommand,
+  ChallengeNameType,
   AuthFlowType,
 } from "@aws-sdk/client-cognito-identity-provider";
 
@@ -31,6 +33,7 @@ import {
   ChangePasswordData,
   ConfirmForgotPasswordData,
   AdminCreateUserData,
+  RespondToNewPasswordChallengeData,
 } from "../types/index.js";
 
 export class CognitoService {
@@ -475,6 +478,31 @@ export class CognitoService {
       AuthFlow: AuthFlowType.USER_PASSWORD_AUTH,
       ClientId: this.config.cognito.clientId,
       AuthParameters: authParameters,
+    });
+
+    return this.client.send(command);
+  }
+
+  async respondToNewPasswordChallenge({
+    username,
+    newPassword,
+    session,
+  }: RespondToNewPasswordChallengeData) {
+    const challengeResponses: any = {
+      USERNAME: username,
+      NEW_PASSWORD: newPassword,
+    };
+
+    const secretHash = this.generateSecretHash(username);
+    if (secretHash) {
+      challengeResponses.SECRET_HASH = secretHash;
+    }
+
+    const command = new RespondToAuthChallengeCommand({
+      ClientId: this.config.cognito.clientId,
+      ChallengeName: ChallengeNameType.NEW_PASSWORD_REQUIRED,
+      Session: session,
+      ChallengeResponses: challengeResponses,
     });
 
     return this.client.send(command);

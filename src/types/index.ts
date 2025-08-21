@@ -125,3 +125,9 @@ export interface AdminCreateUserData {
   temporaryPassword?: string;
   customAttributes?: Record<string, string>;
 }
+//Reset Password (For end user after admin user creation)
+export interface RespondToNewPasswordChallengeData {
+  username: string;
+  newPassword: string;
+  session: string;
+}

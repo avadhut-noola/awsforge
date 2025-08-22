@@ -410,7 +410,7 @@ export class CognitoService {
 
       const command = new AdminCreateUserCommand({
         UserPoolId: this.config.cognito.userPoolId,
-        Username: userData.username,
+        Username: userData.email,
         UserAttributes: userAttributes,
         TemporaryPassword: userData.temporaryPassword,
         // Suppress the default welcome email from Cognito.

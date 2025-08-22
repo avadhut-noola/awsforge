@@ -96,6 +96,7 @@ export class AWSForge {
       deleteUser: this.cognitoService.deleteUser.bind(this.cognitoService),
       resendConfirmationCode: this.cognitoService.resendConfirmationCode.bind(this.cognitoService),
       adminCreateUser: this.cognitoService.adminCreateUser.bind(this.cognitoService),
+      adminDeleteUser: this.cognitoService.adminDeleteUser.bind(this.cognitoService),
       respondToNewPasswordChallenge: this.cognitoService.respondToNewPasswordChallenge.bind(this.cognitoService),
 
       // Token methods

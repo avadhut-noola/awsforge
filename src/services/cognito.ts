@@ -20,6 +20,7 @@ import {
   RespondToAuthChallengeCommand,
   ChallengeNameType,
   AuthFlowType,
+  AdminDeleteUserCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 
 import {
@@ -425,6 +426,14 @@ export class CognitoService {
     }
   }
 
+  async adminDeleteUser({ username }: { username: string }) {
+  const command = new AdminDeleteUserCommand({
+    UserPoolId: this.config.cognito.userPoolId, // use from config
+    Username: username,
+  });
+  return this.client.send(command);
+}
+
   // Existing methods remain the same
   async registerUser(registrationData: UserRegistrationData) {
     try {
@@ -463,8 +472,8 @@ export class CognitoService {
     return this.client.send(command);
   }
 
-  async loginUser({ username, password }: UserLoginData) {
-    const authParameters: any = {
+  async loginUser({ username, password }: { username: string; password: string }) {
+    const authParameters: Record<string, string> = {
       USERNAME: username,
       PASSWORD: password,
     };
@@ -480,7 +489,12 @@ export class CognitoService {
       AuthParameters: authParameters,
     });
 
-    return this.client.send(command);
+    const response = await this.client.send(command);
+
+    // IMPORTANT: just return whatever Cognito gives back
+    // It may contain AuthenticationResult (normal login)
+    // OR ChallengeName + Session (e.g., NEW_PASSWORD_REQUIRED)
+    return response;
   }
 
   async respondToNewPasswordChallenge({

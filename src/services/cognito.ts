@@ -21,6 +21,7 @@ import {
   ChallengeNameType,
   AuthFlowType,
   AdminDeleteUserCommand,
+  AdminDeleteUserCommandOutput,
 } from "@aws-sdk/client-cognito-identity-provider";
 
 import {
@@ -426,13 +427,18 @@ export class CognitoService {
     }
   }
 
-  async adminDeleteUser({ username }: { username: string }) {
-  const command = new AdminDeleteUserCommand({
-    UserPoolId: this.config.cognito.userPoolId, // use from config
-    Username: username,
-  });
-  return this.client.send(command);
-}
+  async adminDeleteUser({ username }: { username: string }): Promise<AdminDeleteUserCommandOutput> {
+    try {
+      const command = new AdminDeleteUserCommand({
+        UserPoolId: this.config.cognito.userPoolId,
+        Username: username,
+      });
+      return await this.client.send(command);
+    } catch (error) {
+      console.error(`Admin user deletion error for user ${username}:`, error);
+      throw error;
+    }
+  }
 
   // Existing methods remain the same
   async registerUser(registrationData: UserRegistrationData) {

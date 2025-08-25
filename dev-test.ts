@@ -28,13 +28,13 @@ console.log("Config loaded:", {
 const testUser = {
   username: "avadhutn",
   password: "Welcome@123",
-  email: "avadhutn@ssktech.co.in",
+  email: "avadhutn34523@ssktech.co.in",
   customAttributes: {}
 };
 
 const existingUser = {
   username: "avadhutn@ssktech.co.in",
-  password: "Welcome@123"
+  password: "DeveloperAN#3690"
 };
 
 // Global variables to store tokens for testing
@@ -221,6 +221,19 @@ async function runTests() {
     }
   } catch (error: any) {
     console.error("✗ Admin user creation failed:", error.message);
+  }
+  console.log("-".repeat(50));
+
+  // Test 11: Admin Delete User
+  console.log("Test 11: Admin Delete User");
+  try {
+    // Attempt to delete the user created in the previous step
+    await cognitoService.adminDeleteUser({ username: "admin.created.1756102176273@example.com" });
+    console.log(`✓ Admin user deletion successful for user: admin.created.1756102176273@example.com`);
+  } catch (error: any) {
+    // This might fail if the user creation in the previous step failed, which is expected.
+    // We log it as an error but don't stop the script.
+    console.error(`✗ Admin user deletion failed for user admin.created.1756102176273@example.com`, error.message);
   }
   console.log("-".repeat(50));
 

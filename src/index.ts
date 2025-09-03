@@ -70,6 +70,9 @@ export default function createCognito(config: Partial<CognitoConfig>) {
     async adminCreateUser(data: import('./types/index.js').AdminCreateUserData) {
       return service.adminCreateUser(data);
     },
+    async adminDeleteUser(params: { username: string }) {
+      return service.adminDeleteUser(params);
+    },
     async respondToNewPasswordChallenge(data: import('./types/index.js').RespondToNewPasswordChallengeData) {
       return service.respondToNewPasswordChallenge(data);
     },

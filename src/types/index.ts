@@ -117,6 +117,8 @@ export interface UserSession {
 // Admin user creation
 export interface AdminCreateUserData {
   fullName?: string;
+  firstName?: string;
+  lastName?: string;
   username: string;
   email: string;
   /** An optional temporary password for the user.

@@ -26,14 +26,19 @@ All environment variables are required for proper functionality:
 
 ```env
 AWS_REGION=us-east-1
-AWS_ACCESS_KEY=your_aws_access_key
-AWS_SECRET_KEY=your_aws_secret_key
 USER_POOL_ID=your_cognito_user_pool_id
 CLIENT_ID=your_cognito_app_client_id
 CLIENT_SECRET=your_cognito_app_client_secret
 ```
 
-**Important**: All variables must be set. Missing variables will cause authentication failures.
+**Note**: AWS credentials are no longer required as direct environment variables. The library uses the standard AWS credential provider chain, which will look for credentials in the following order:
+1. Environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+2. Shared credentials file (~/.aws/credentials)
+3. ECS container credentials
+4. EC2 instance profile credentials
+5. Lambda function credentials
+
+This enables more secure credential management and better compatibility with AWS services like Lambda.
 
 ## Usage Patterns
 

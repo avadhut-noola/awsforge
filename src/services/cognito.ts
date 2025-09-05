@@ -50,12 +50,9 @@ export class CognitoService {
     });
 
     // Initialize AWS client with package config
+    // Using default credential provider chain instead of explicit credentials
     this.client = new CognitoIdentityProviderClient({
       region: this.config.cognito.region,
-      credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY!,
-        secretAccessKey: process.env.AWS_SECRET_KEY!,
-      },
     });
 
     // Initialize JWKS client for token verification

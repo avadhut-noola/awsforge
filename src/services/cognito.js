@@ -53,10 +53,6 @@ exports.initiateForgotPassword = initiateForgotPassword;
 var client_cognito_identity_provider_1 = require("@aws-sdk/client-cognito-identity-provider");
 var client = new client_cognito_identity_provider_1.CognitoIdentityProviderClient({
     region: process.env.AWS_REGION,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY,
-        secretAccessKey: process.env.AWS_SECRET_KEY,
-    },
 });
 var CLIENT_ID = process.env.CLIENT_ID;
 // Register a new user (UNCONFIRMED)

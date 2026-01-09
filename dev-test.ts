@@ -237,6 +237,45 @@ async function runTests() {
   }
   console.log("-".repeat(50));
 
+  // Test 12: Admin Disable User
+  console.log("Test 12: Admin Disable User");
+  try {
+    await cognitoService.adminDisableUser({ username: existingUser.username });
+    console.log(`✓ Admin user disable successful for user: ${existingUser.username}`);
+  } catch (error: any) {
+    console.error(`✗ Admin user disable failed for user ${existingUser.username}:`, error.message);
+  }
+  console.log("-".repeat(50));
+
+  // Test 13: Admin Enable User
+  console.log("Test 13: Admin Enable User");
+  try {
+    await cognitoService.adminEnableUser({ username: existingUser.username });
+    console.log(`✓ Admin user enable successful for user: ${existingUser.username}`);
+  } catch (error: any) {
+    console.error(`✗ Admin user enable failed for user ${existingUser.username}:`, error.message);
+  }
+  console.log("-".repeat(50));
+
+  // Test 14: Admin Update User Attributes
+  console.log("Test 14: Admin Update User Attributes");
+  try {
+    await cognitoService.adminUpdateUserAttributes({
+      username: existingUser.username,
+      userAttributes: [
+        { Name: "given_name", Value: "UpdatedFirstName" },
+        { Name: "family_name", Value: "UpdatedLastName" },
+      ],
+      clientMetadata: {
+        testKey: "testValue"
+      }
+    });
+    console.log(`✓ Admin update user attributes successful for user: ${existingUser.username}`);
+  } catch (error: any) {
+    console.error(`✗ Admin update user attributes failed for user ${existingUser.username}:`, error.message);
+  }
+  console.log("-".repeat(50));
+
   console.log("All tests completed!");
 }
 

@@ -133,3 +133,23 @@ export interface RespondToNewPasswordChallengeData {
   newPassword: string;
   session: string;
 }
+
+// Admin Disable User
+export interface AdminDisableUserData {
+  username: string;
+}
+
+// Admin Enable User
+export interface AdminEnableUserData {
+  username: string;
+}
+
+// Admin Update User Attributes
+export interface AdminUpdateUserAttributesData {
+  username: string;
+  userAttributes: Array<{
+    Name: string;
+    Value: string;
+  }>;
+  clientMetadata?: Record<string, string>;
+}

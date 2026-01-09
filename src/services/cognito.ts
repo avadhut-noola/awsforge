@@ -22,6 +22,12 @@ import {
   AuthFlowType,
   AdminDeleteUserCommand,
   AdminDeleteUserCommandOutput,
+  AdminDisableUserCommand,
+  AdminDisableUserCommandOutput,
+  AdminEnableUserCommand,
+  AdminEnableUserCommandOutput,
+  AdminUpdateUserAttributesCommand,
+  AdminUpdateUserAttributesCommandOutput,
 } from "@aws-sdk/client-cognito-identity-provider";
 
 import {
@@ -36,6 +42,9 @@ import {
   ConfirmForgotPasswordData,
   AdminCreateUserData,
   RespondToNewPasswordChallengeData,
+  AdminDisableUserData,
+  AdminEnableUserData,
+  AdminUpdateUserAttributesData,
 } from "../types/index.js";
 
 export class CognitoService {
@@ -535,6 +544,79 @@ export class CognitoService {
     });
 
     return this.client.send(command);
+  }
+
+  /**
+   * Disables a user in the user pool as an administrator.
+   * This action requires AWS credentials with admin permissions.
+   * A deactivated user can't sign in, but still appears in the responses to ListUsers API requests.
+   * @param userData - The user data containing the username to disable.
+   * @returns The result of the AdminDisableUser command.
+   */
+  async adminDisableUser({ username }: AdminDisableUserData): Promise<AdminDisableUserCommandOutput> {
+    const command = new AdminDisableUserCommand({
+      UserPoolId: this.config.cognito.userPoolId,
+      Username: username,
+    });
+
+    try {
+      const response = await this.client.send(command);
+      return response;
+    } catch (error) {
+      console.error('Error disabling user:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Enables a user in the user pool as an administrator.
+   * This action requires AWS credentials with admin permissions.
+   * Activates sign-in for a user profile that previously had sign-in access disabled.
+   * @param userData - The user data containing the username to enable.
+   * @returns The result of the AdminEnableUser command.
+   */
+  async adminEnableUser({ username }: AdminEnableUserData): Promise<AdminEnableUserCommandOutput> {
+    const command = new AdminEnableUserCommand({
+      UserPoolId: this.config.cognito.userPoolId,
+      Username: username,
+    });
+
+    try {
+      const response = await this.client.send(command);
+      return response;
+    } catch (error) {
+      console.error('Error enabling user:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Updates the specified user's attributes as an administrator.
+   * This action requires AWS credentials with admin permissions.
+   * Can set a user's email address or phone number as verified.
+   * To delete an attribute, submit the attribute with a blank value.
+   * @param userData - The user data containing username, attributes, and optional client metadata.
+   * @returns The result of the AdminUpdateUserAttributes command.
+   */
+  async adminUpdateUserAttributes({
+    username,
+    userAttributes,
+    clientMetadata,
+  }: AdminUpdateUserAttributesData): Promise<AdminUpdateUserAttributesCommandOutput> {
+    const command = new AdminUpdateUserAttributesCommand({
+      UserPoolId: this.config.cognito.userPoolId,
+      Username: username,
+      UserAttributes: userAttributes,
+      ClientMetadata: clientMetadata,
+    });
+
+    try {
+      const response = await this.client.send(command);
+      return response;
+    } catch (error) {
+      console.error('Error updating user attributes:', error);
+      throw error;
+    }
   }
 }
 

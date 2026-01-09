@@ -73,6 +73,15 @@ export default function createCognito(config: Partial<CognitoConfig>) {
     async adminDeleteUser(params: { username: string }) {
       return service.adminDeleteUser(params);
     },
+    async adminDisableUser(data: import('./types/index.js').AdminDisableUserData) {
+      return service.adminDisableUser(data);
+    },
+    async adminEnableUser(data: import('./types/index.js').AdminEnableUserData) {
+      return service.adminEnableUser(data);
+    },
+    async adminUpdateUserAttributes(data: import('./types/index.js').AdminUpdateUserAttributesData) {
+      return service.adminUpdateUserAttributes(data);
+    },
     async respondToNewPasswordChallenge(data: import('./types/index.js').RespondToNewPasswordChallengeData) {
       return service.respondToNewPasswordChallenge(data);
     },
@@ -100,6 +109,9 @@ export class AWSForge {
       resendConfirmationCode: this.cognitoService.resendConfirmationCode.bind(this.cognitoService),
       adminCreateUser: this.cognitoService.adminCreateUser.bind(this.cognitoService),
       adminDeleteUser: this.cognitoService.adminDeleteUser.bind(this.cognitoService),
+      adminDisableUser: this.cognitoService.adminDisableUser.bind(this.cognitoService),
+      adminEnableUser: this.cognitoService.adminEnableUser.bind(this.cognitoService),
+      adminUpdateUserAttributes: this.cognitoService.adminUpdateUserAttributes.bind(this.cognitoService),
       respondToNewPasswordChallenge: this.cognitoService.respondToNewPasswordChallenge.bind(this.cognitoService),
 
       // Token methods

@@ -10,6 +10,7 @@ Enterprise-grade AWS Cognito authentication module for Node.js applications with
 - Token verification and refresh
 - Custom attribute validation
 - User profile management
+- Admin operations (create, delete, enable, disable, update user attributes)
 - Full TypeScript support
 - ESM ready
 - Multiple usage patterns (functional, class-based, service-based)
@@ -288,6 +289,101 @@ await cognito.deleteUser(accessToken);
 
 // Revoke token
 await cognito.revokeToken(refreshToken);
+```
+
+## Admin Operations
+
+These operations require AWS credentials with administrator permissions. They are typically used for administrative tasks like user management.
+
+### Admin Create User
+
+Create a user as an administrator without requiring email confirmation:
+
+```typescript
+// All APIs (functional, class-based, service-based)
+const adminResult = await cognito.adminCreateUser({
+  username: 'newuser@example.com',
+  email: 'newuser@example.com',
+  firstName: 'John',
+  lastName: 'Doe',
+  temporaryPassword: 'TempPassword123!', // Optional
+  customAttributes: {
+    plan: 'premium'
+  }
+});
+```
+
+### Admin Delete User
+
+Delete a user from the user pool as an administrator:
+
+```typescript
+await cognito.adminDeleteUser({ 
+  username: 'user@example.com' 
+});
+```
+
+### Admin Disable User
+
+Deactivate a user profile and revoke all access tokens. A deactivated user can't sign in:
+
+```typescript
+await cognito.adminDisableUser({ 
+  username: 'user@example.com' 
+});
+```
+
+### Admin Enable User
+
+Reactivate a previously disabled user profile:
+
+```typescript
+await cognito.adminEnableUser({ 
+  username: 'user@example.com' 
+});
+```
+
+### Admin Update User Attributes
+
+Update user attributes as an administrator. Can set email or phone as verified:
+
+```typescript
+await cognito.adminUpdateUserAttributes({
+  username: 'user@example.com',
+  userAttributes: [
+    { Name: 'given_name', Value: 'UpdatedFirstName' },
+    { Name: 'family_name', Value: 'UpdatedLastName' },
+    { Name: 'email_verified', Value: 'true' }, // Mark email as verified
+    { Name: 'phone_number', Value: '+1234567890' },
+    { Name: 'phone_number_verified', Value: 'true' }
+  ],
+  clientMetadata: { // Optional
+    source: 'admin-panel',
+    reason: 'user-request'
+  }
+});
+```
+
+**Note:** To delete an attribute, submit it with a blank value:
+```typescript
+await cognito.adminUpdateUserAttributes({
+  username: 'user@example.com',
+  userAttributes: [
+    { Name: 'middle_name', Value: '' } // Deletes the attribute
+  ]
+});
+```
+
+### Respond to New Password Challenge
+
+After admin creates a user with a temporary password, the user must set a new password:
+
+```typescript
+const response = await cognito.respondToNewPasswordChallenge({
+  username: 'user@example.com',
+  newPassword: 'NewSecurePassword123!',
+  session: sessionFromLoginResponse // From initial login attempt
+});
 ```
 
 ## Configuration Options

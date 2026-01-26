@@ -44,6 +44,10 @@ export default function createCognito(config: Partial<CognitoConfig>) {
       return service.initiateForgotPassword(data);
     },
 
+    async confirmForgotPassword(data: import('./types/index.js').ConfirmForgotPasswordData) {
+      return service.confirmForgotPassword(data);
+    },
+
     async verifyToken(token: string) {
       return service.verifyToken(token);
     },

@@ -239,9 +239,36 @@ console.log('Attributes:', userProfile.attributes);
 Refresh expired access tokens:
 
 ```typescript
+// Simple refresh (without client secret)
 const refreshResult = await cognito.refreshTokens(refreshToken);
 const newAccessToken = refreshResult.AuthenticationResult?.AccessToken;
+
+// With client secret - IMPORTANT: You must provide either username or accessToken
+// Option 1: Pass username (recommended - most reliable)
+const refreshResult = await cognito.refreshTokens(refreshToken, username);
+
+// Option 2: Pass the current (possibly expired) accessToken
+// The library will extract the SUB from it without making API calls
+const refreshResult = await cognito.refreshTokens(refreshToken, undefined, accessToken);
+
+// Best practice: Store username from login and use it for refresh
+const loginResult = await cognito.login({
+  username: 'john@example.com',
+  password: 'SecurePassword123!'
+});
+
+// Extract and store tokens AND username
+const { AccessToken, IdToken, RefreshToken } = loginResult.AuthenticationResult;
+const userProfile = await cognito.getUserFromToken(AccessToken);
+const username = userProfile.username; // Store this for later refresh
+
+// Later, when refreshing
+const refreshResult = await cognito.refreshTokens(RefreshToken, username);
 ```
+
+**Note for Client Secret Users**: When your Cognito app client uses a client secret, AWS Cognito requires the username/SUB to generate the SECRET_HASH for refresh token operations. Make sure to either:
+1. Store the username from the login response and pass it to `refreshTokens()`
+2. Pass the access token (even if expired) so the library can extract the SUB from it
 
 ### Password Reset
 

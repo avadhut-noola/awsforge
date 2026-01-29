@@ -64,8 +64,8 @@ export default function createCognito(config: Partial<CognitoConfig>) {
       return service.getUserFromToken(accessToken);
     },
 
-    async refreshTokens(refreshToken: string) {
-      return service.refreshTokens(refreshToken);
+    async refreshTokens(refreshToken: string, username?: string, accessToken?: string) {
+      return service.refreshTokens(refreshToken, username, accessToken);
     },
 
     async revokeToken(token: string) {

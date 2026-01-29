@@ -301,29 +301,33 @@ export class CognitoService {
     if (this.config.cognito.clientSecret) {
       let usernameForHash = username;
       
-      // Try to get SUB from access token first (most reliable for refresh)
+      // Try to get SUB from access token first (decode only, don't make API call)
+      // This is more reliable than extracting from refresh token
       if (!usernameForHash && accessToken) {
-        try {
-          const userProfile = await this.getUserFromToken(accessToken);
-          usernameForHash = userProfile.attributes.sub || userProfile.username;
-          console.log('Using SUB from user profile for SECRET_HASH:', usernameForHash);
-        } catch (error) {
-          console.warn('Could not get user profile from access token:', error);
-          // Fall back to token extraction
-          usernameForHash = this.getSubFromAccessToken(accessToken);
+        usernameForHash = this.getSubFromAccessToken(accessToken);
+        if (usernameForHash) {
+          console.log('Extracted SUB from access token for SECRET_HASH');
         }
       }
       
       // If still no username, try to extract from refresh token
+      // Note: Cognito refresh tokens typically don't contain username/sub in their payload
+      // but we try anyway as a fallback
       if (!usernameForHash) {
         usernameForHash = this.extractUsernameFromToken(refreshToken);
+        if (usernameForHash) {
+          console.log('Extracted username from refresh token for SECRET_HASH');
+        }
       }
       
       if (!usernameForHash) {
-        throw new Error('Username/SUB is required for refresh token when using client secret. Cannot extract from tokens.');
+        throw new Error(
+          'Username/SUB is required for refresh token when using client secret. ' +
+          'Please pass either: 1) username parameter, 2) accessToken parameter, or 3) store username from login response. ' +
+          'Example: refreshTokens(refreshToken, username) or refreshTokens(refreshToken, undefined, accessToken)'
+        );
       }
       
-      console.log('Using username/SUB for SECRET_HASH:', usernameForHash);
       const secretHash = this.generateSecretHash(usernameForHash);
       if (secretHash) {
         authParameters.SECRET_HASH = secretHash;

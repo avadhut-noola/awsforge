@@ -426,7 +426,7 @@ export class CognitoService {
         TemporaryPassword: userData.temporaryPassword,
         // Suppress the default welcome email from Cognito.
         // Your application should handle notifying the user with their temporary password.
-        MessageAction: 'SUPPRESS',
+        // MessageAction: 'SUPPRESS', Removing MessageAction: 'SUPRESS' to allow cognito to send invite emails
       });
 
       const response = await this.client.send(command);

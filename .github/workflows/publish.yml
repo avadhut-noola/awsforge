@@ -19,10 +19,6 @@ jobs:
           scope: '@ssktechnologies'
 
       - run: npm ci
-      - name: Configure npm authentication
-        run: |
-          echo "@ssktechnologies:registry=https://registry.npmjs.org/" >> .npmrc
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> .npmrc
 
       - name: Publish to NPM
         run: npm publish --access public

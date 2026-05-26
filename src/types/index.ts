@@ -16,6 +16,8 @@ export interface UserRegistrationData {
   email: string;
   password: string;
   username?: string;
+  name?: string;
+  fullName?: string;
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
@@ -116,6 +118,7 @@ export interface UserSession {
 
 // Admin user creation
 export interface AdminCreateUserData {
+  name?: string;
   fullName?: string;
   firstName?: string;
   lastName?: string;

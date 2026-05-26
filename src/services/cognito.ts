@@ -118,6 +118,8 @@ export class CognitoService {
     userData: {
       email?: string;
       username?: string;
+      name?: string;
+      fullName?: string;
       firstName?: string;
       lastName?: string;
       phoneNumber?: string;
@@ -135,6 +137,9 @@ export class CognitoService {
     }
     if (userData.username) {
       attributes.push({ Name: 'preferred_username', Value: userData.username });
+    }
+    if (userData.name || userData.fullName) {
+      attributes.push({ Name: 'name', Value: userData.name || userData.fullName });
     }
     if (userData.firstName) {
       attributes.push({ Name: 'given_name', Value: userData.firstName });

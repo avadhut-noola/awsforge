@@ -19,11 +19,11 @@ jobs:
           scope: '@ssktechnologies'
 
       - run: npm ci
-
-      - name: Publish to NPM
-        run: npm publish --access public
       - name: Verify npm auth
         run: npm whoami
+        
+      - name: Publish to NPM
+        run: npm publish --access public
         
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
